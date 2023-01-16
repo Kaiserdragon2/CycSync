@@ -19,6 +19,7 @@ import com.polidea.rxandroidble3.NotificationSetupMode;
 import com.polidea.rxandroidble3.RxBleClient;
 import com.polidea.rxandroidble3.RxBleConnection;
 import com.polidea.rxandroidble3.RxBleDevice;
+import com.polidea.rxandroidble3.internal.RxBleDeviceImpl_Factory;
 import com.polidea.rxandroidble3.scan.ScanResult;
 import com.polidea.rxandroidble3.scan.ScanSettings;
 
@@ -56,9 +57,6 @@ public class MainActivity extends AppCompatActivity {
         addButton =(findViewById(R.id.addButton));
         addButton.setOnClickListener(v -> scan());
 
-
-
-
     }
 
 
@@ -83,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+
     private void updateUI(ScanResult scanResult) {
         DeviceListAdapter adapter = (DeviceListAdapter) recyclerView.getAdapter();
         if (adapter != null) {
@@ -90,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             List<ScanResult> results = new ArrayList<>();
             results.add(scanResult);
-            DeviceListAdapter newAdapter = new DeviceListAdapter(results);
+            DeviceListAdapter newAdapter = new DeviceListAdapter(results,this);
             recyclerView.setAdapter(newAdapter);
         }
     }

@@ -21,8 +21,9 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/foundDevices"
-        android:layout_width="411dp"
-        android:layout_height="734dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

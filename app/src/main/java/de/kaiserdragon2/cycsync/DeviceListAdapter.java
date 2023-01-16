@@ -4,11 +4,16 @@ import static com.polidea.rxandroidble3.internal.logger.LoggerUtil.bytesToHex;
 import static de.kaiserdragon2.cycsync.BuildConfig.DEBUG;
 
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -20,6 +25,7 @@ import com.polidea.rxandroidble3.RxBleDevice;
 import com.polidea.rxandroidble3.scan.ScanResult;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import java.util.UUID;
@@ -36,13 +42,27 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.ViewHolder> {
 
     final String TAG ="DeviceListAdapter";
-
+    DeviceDatabase databaseHelper ;
+    private Context context;
     private List<ScanResult> mScanResults;
 
 
-    public DeviceListAdapter(List<ScanResult> scanResults) {
+    private List<ArrayList<String>> mSavedDevices;
+
+
+
+    public DeviceListAdapter(List<ScanResult> scanResults, Context context) {
         mScanResults = scanResults;
+        this.context = context;
+        databaseHelper  = new DeviceDatabase(context);
     }
+
+    public void DeviceListAdapterSaved(Context context) {
+        databaseHelper  = new DeviceDatabase(context);
+        mSavedDevices = databaseHelper.getAllDevices();
+    }
+
+
 
     @NonNull
     @Override
@@ -64,14 +84,25 @@ class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.ViewHolde
     }
 
     public void updateScanResults(ScanResult scanResult) {
-        // check if the scan result is already in the list
-        if (!mScanResults.contains(scanResult.getBleDevice().getName())) {
+        boolean duplicate = false;
+        String newMac = scanResult.getBleDevice().getMacAddress();
+        for (ScanResult sr : mScanResults) {
+            String currentMac = sr.getBleDevice().getMacAddress();
+            if (newMac.equals(currentMac)) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) {
             mScanResults.add(scanResult);
             notifyDataSetChanged();
         }
     }
 
+
     class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+
+
         TextView deviceNameTextView;
         TextView deviceAddressTextView;
 
@@ -86,6 +117,10 @@ class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.ViewHolde
         public void onClick(View view) {
             int position = getAdapterPosition();
             ScanResult scanResult = mScanResults.get(position);
+            String deviceName = scanResult.getBleDevice().getName();
+            String macAddress = scanResult.getBleDevice().getMacAddress();
+            saveSQLData(macAddress,deviceName);
+            DeviceListAdapterSaved(context);
             // Do something with the scanResult, for example, connect to it
             //MainActivity.bleDevice = scanResult.getBleDevice();
             //MainActivity.connectionObservable = MainActivity.prepareConnectionObservable();
@@ -97,6 +132,19 @@ class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.ViewHolde
 
 
 
+
+    }
+    private void saveSQLData(String mac, String deviceName){
+
+
+        // Save the data to the database
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(databaseHelper.getColumnDeviceName(), deviceName);
+        contentValues.put(databaseHelper.getColumnMac(), mac);
+        SQLiteDatabase db = databaseHelper.getWritableDatabase();
+        db.insert(databaseHelper.getTableName(), null, contentValues);
+        Toast.makeText(context, "Device saved to the database", Toast.LENGTH_SHORT).show();
+        }
 
     }
 
@@ -113,6 +161,7 @@ class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.ViewHolde
  */
 
 
-    }
+
+
 
 
