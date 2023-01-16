@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CycSync</string>
+    <string name="storage">Storage</string>
+    <string name="addNewDevice">Add new device</string>
+</resources>
