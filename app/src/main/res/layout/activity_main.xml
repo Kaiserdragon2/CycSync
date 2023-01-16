@@ -17,7 +17,8 @@
         android:contentDescription="@string/addNewDevice"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_add" />
+        app:maxImageSize="32dp"
+        app:srcCompat="@drawable/add_button" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/foundDevices"
