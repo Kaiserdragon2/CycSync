@@ -1,5 +1,7 @@
 package de.kaiserdragon2.cycsync;
 
+import static de.kaiserdragon2.cycsync.BuildConfig.DEBUG;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -52,10 +54,10 @@ public class DeviceDatabase extends SQLiteOpenHelper {
         return COLUMN_NAME;
     }
 
-    public List<ArrayList<String>> getAllDevices() {
-        List<ArrayList<String>> savedDevices = new ArrayList<>();
+    public ArrayList<DeviceInfo> getAllDevices() {
+        ArrayList<DeviceInfo> savedDevices = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM devices_table", null);
+        Cursor cursor = db.rawQuery("SELECT * FROM devices", null);
         if (cursor.moveToFirst()) {
             do {
                 int nameIndex = cursor.getColumnIndex(COLUMN_NAME);
@@ -63,10 +65,8 @@ public class DeviceDatabase extends SQLiteOpenHelper {
                 if (nameIndex != -1 && macIndex != -1) {
                     String name = cursor.getString(nameIndex);
                     String mac = cursor.getString(macIndex);
-                    ArrayList<String> device = new ArrayList<>();
-                    device.add(name);
-                    device.add(mac);
-                    savedDevices.add(device);
+                    DeviceInfo deviceInfo =new DeviceInfo(name,mac);
+                    savedDevices.add(deviceInfo);
                 } else {
                     Log.e(TAG, "Column not found in the cursor");
                 }
@@ -75,6 +75,23 @@ public class DeviceDatabase extends SQLiteOpenHelper {
         cursor.close();
         return savedDevices;
     }
+
+    public boolean checkIfExist(String mac) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(
+                TABLE_NAME,
+                new String[]{COLUMN_ID},
+                COLUMN_MAC_ADDRESS + " = ?",
+                new String[]{mac},
+                null,
+                null,
+                null);
+        boolean exists = (cursor.getCount() > 0);
+        cursor.close();
+        if(DEBUG)Log.v(TAG,"Device exists = " + exists);
+        return exists;
+    }
+
 
 
     @Override
