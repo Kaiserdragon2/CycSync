@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
@@ -304,14 +305,18 @@ public class MainActivity extends AppCompatActivity {
             deviceAddressTextView = itemView.findViewById(R.id.device_address);
             itemView.setOnClickListener(view -> {
                 int position = getAdapterPosition();
+                DeviceInfo device = deviceInfo.get(position);
+                String deviceName = device.getDeviceName();
+                String macAddress = device.getMacAddress();
                 if (addButton.getVisibility() == View.GONE) {
-                    DeviceInfo device = deviceInfo.get(position);
-                    String deviceName = device.getDeviceName();
-                    String macAddress = device.getMacAddress();
                     saveSQLData(macAddress, deviceName);
                     addButton.setVisibility(View.VISIBLE);
                     recyclerView.setAdapter(adapter);
                     scanSubscription.dispose();
+                }else{
+                    Intent intent = new Intent(MainActivity.this, DeviceActivity.class);
+                    intent.putExtra("selected_device_mac", macAddress);
+                    startActivity(intent);
                 }
                 //DeviceListAdapterSaved(context);
                 // Do something with the scanResult, for example, connect to it
