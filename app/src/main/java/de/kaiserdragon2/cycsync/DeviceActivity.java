@@ -15,6 +15,11 @@ import com.polidea.rxandroidble3.RxBleClient;
 import com.polidea.rxandroidble3.RxBleConnection;
 import com.polidea.rxandroidble3.RxBleDevice;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.UUID;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -28,7 +33,7 @@ public class DeviceActivity extends AppCompatActivity {
     final UUID ServiceUUID = UUID.fromString("6e400004-b5a3-f393-e0a9-e50e24dcca9e");
     final UUID UART_RX = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
 
-    final byte[] requestFileList= new byte[]{
+    final byte[] requestFileList = new byte[]{
             (byte) 0x05, (byte) 0x66, (byte) 0x69, (byte) 0x6c,
             (byte) 0x65, (byte) 0x6c, (byte) 0x69, (byte) 0x73,
             (byte) 0x74, (byte) 0x2e, (byte) 0x74, (byte) 0x78,
@@ -77,6 +82,22 @@ public class DeviceActivity extends AppCompatActivity {
         setupNotificationOnDevice(connection, ServiceUUID);
 
 
+
+
+    }
+
+    private void file(RxBleConnection connection){
+        connection.writeCharacteristic(ServiceUUID, requestFileList)
+                .subscribe(bytes -> {
+                    // handle the response
+                    String hexString = bytesToHex(bytes);
+
+                    Log.v(TAG, "Answer" + hexString);
+                }, throwable -> {
+                    // handle the error
+                });
+    }
+    private void speicher(RxBleConnection connection){
         byte[] value = new byte[]{(byte) 0x090009};
 
         connection.writeCharacteristic(ServiceUUID, value)
@@ -88,19 +109,9 @@ public class DeviceActivity extends AppCompatActivity {
                 }, throwable -> {
                     // handle the error
                 });
-
-        EOT(connection);
-
-        connection.writeCharacteristic(ServiceUUID, requestFileList)
-                .subscribe(bytes -> {
-                    // handle the response
-                    String hexString = bytesToHex(bytes);
-
-                    Log.v(TAG, "Answer" + hexString);
-                }, throwable -> {
-                    // handle the error
-                });
-        value = new byte[]{(byte) 0x43};
+    }
+    private void copy(RxBleConnection connection) {
+        byte[] value = new byte[]{(byte) 0x43};
         connection.writeCharacteristic(UART_RX, value)
                 .subscribe(bytes -> {
                     // handle the response
@@ -110,7 +121,19 @@ public class DeviceActivity extends AppCompatActivity {
                 }, throwable -> {
                     // handle the error
                 });
+    }
 
+    private void ack(RxBleConnection connection) {
+        byte[] value = new byte[]{(byte) 0x06};
+        connection.writeCharacteristic(UART_RX, value).subscribe(bytes -> {
+            // handle the response
+            String hexString = bytesToHex(bytes);
+
+            Log.v(TAG, "Answer" + hexString);
+            //copy(connection);
+        }, throwable -> {
+            // handle the error
+        });
     }
 
     private String bytesToHex(byte[] bytes) {
@@ -150,9 +173,28 @@ public class DeviceActivity extends AppCompatActivity {
                     notificationObservable
                             .subscribe(bytes -> {
 
-
+                                Log.v(TAG, "Bytes:" + Arrays.toString(bytes));
                                 String hexString = bytesToHex(bytes);
                                 String ascii = hexToAscii(hexString);
+                                if(ascii.contains("/")){
+                                  //  EOT(connection);
+                                }
+                                if(ascii.contains("04")){
+                                   // file(connection);
+                                }
+                                if(ascii.contains("filelist.txtT")){
+                                  //  copy(connection);
+                                }
+                                if (ascii.contains("filelist.txt 365")) {
+                                    //  writeToFile(bytes);
+                                 //   ack(connection);
+                                    ack(connection);
+                                    copy(connection);
+                                    //speicher(connection);
+
+
+
+                                }
 
 
                                 Log.v(TAG, "Notification:" + ascii);
@@ -172,6 +214,15 @@ public class DeviceActivity extends AppCompatActivity {
                      */
 
                     Log.d(TAG, "Notification set up successfully");
+
+speicher(connection);
+                    EOT(connection);
+                    file(connection);
+                    copy(connection);
+                    //ack(connection);
+                    copy(connection);
+                    speicher(connection);
+
                 }, throwable -> {
                     Log.e(TAG, "Error setting up notification", throwable);
                 });
@@ -188,6 +239,21 @@ public class DeviceActivity extends AppCompatActivity {
         return output.toString();
     }
 
+    public void writeToFile(byte[] array) {
+        String path = (context.getFilesDir() + "/Filelist.txt");
+        try {
+            File file = new File(path);
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            FileOutputStream stream = new FileOutputStream(path);
+            stream.write(array);
+        } catch (FileNotFoundException e1) {
+            e1.printStackTrace();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     protected void onDestroy() {
