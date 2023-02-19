@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         scanSubscription = rxBleClient.scanBleDevices(
                         new ScanSettings.Builder().build()
                 )
-                .filter(scanResult -> Objects.equals(scanResult.getBleDevice().getName(), "M2_03E8"))
+                .filter(scanResult -> Objects.equals(scanResult.getBleDevice().getName(),"M2_03E8"))
                 .subscribe(
                         scanResult -> {
                             if (DEBUG) Log.v(TAG, String.valueOf(scanResult));
@@ -99,14 +99,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateUI(ScanResult scanResult) {
         DeviceListAdapter adapter = (DeviceListAdapter) recyclerView.getAdapter();
-        if (adapter != this.adapter && adapter !=null) {
+        if (adapter != this.adapter && adapter != null) {
             adapter.updateResults(scanResult);
         } else {
             List<DeviceInfo> results = new ArrayList<>();
-            //DeviceInfo deviceInfo = new DeviceInfo(scanResult.getBleDevice().getName(),scanResult.getBleDevice().getMacAddress());
-            //results.add(deviceInfo);
             DeviceListAdapter newAdapter = new DeviceListAdapter(results);
             recyclerView.setAdapter(newAdapter);
+
         }
     }
 
@@ -250,7 +249,8 @@ public class MainActivity extends AppCompatActivity {
             DeviceInfo deviceInfo = new DeviceInfo(scanResult.getBleDevice().getName(), scanResult.getBleDevice().getMacAddress());
             if (mScanResults.contains(deviceInfo)) return;
             mScanResults.add(deviceInfo);
-            notifyItemInserted(mScanResults.size()+1);
+
+            notifyItemInserted(mScanResults.size() + 1);
             //notifyDataSetChanged();
         }
 
@@ -258,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public DeviceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.device_item, parent, false);
-            return new DeviceViewHolder(view, deviceInfoAll);
+            return new DeviceViewHolder(view, mScanResults);
         }
 
         @Override
@@ -305,7 +305,12 @@ public class MainActivity extends AppCompatActivity {
             deviceAddressTextView = itemView.findViewById(R.id.device_address);
             itemView.setOnClickListener(view -> {
                 int position = getAdapterPosition();
+                Log.v(TAG, String.valueOf(position));
+
+                Log.v(TAG, String.valueOf(deviceInfo));
                 DeviceInfo device = deviceInfo.get(position);
+
+
                 String deviceName = device.getDeviceName();
                 String macAddress = device.getMacAddress();
                 if (addButton.getVisibility() == View.GONE) {
@@ -313,11 +318,12 @@ public class MainActivity extends AppCompatActivity {
                     addButton.setVisibility(View.VISIBLE);
                     recyclerView.setAdapter(adapter);
                     scanSubscription.dispose();
-                }else{
+                } else {
                     Intent intent = new Intent(MainActivity.this, DeviceActivity.class);
                     intent.putExtra("selected_device_mac", macAddress);
                     startActivity(intent);
                 }
+
                 //DeviceListAdapterSaved(context);
                 // Do something with the scanResult, for example, connect to it
                 //MainActivity.bleDevice = scanResult.getBleDevice();

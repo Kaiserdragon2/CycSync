@@ -2,15 +2,22 @@ package de.kaiserdragon2.cycsync;
 
 import static android.bluetooth.BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE;
 
+import static com.polidea.rxandroidble3.NotificationSetupMode.QUICK_SETUP;
+
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.polidea.rxandroidble3.RxBleClient;
 import com.polidea.rxandroidble3.RxBleConnection;
 import com.polidea.rxandroidble3.RxBleDevice;
@@ -23,9 +30,11 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class DeviceActivity extends AppCompatActivity {
     Context context;
@@ -41,8 +50,10 @@ public class DeviceActivity extends AppCompatActivity {
     };
 
 
-    RxBleClient rxBleClient;
+    Button syncButton;
 
+    RxBleClient rxBleClient;
+    RxBleConnection Mconnection;
     public static Observable<RxBleConnection> connectionObservable;
     private static final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private Disposable connectionDisposable;
@@ -59,9 +70,17 @@ public class DeviceActivity extends AppCompatActivity {
         connectAndSetupNotifications(selectedDeviceMac);
         TextView storage = findViewById(R.id.StorageValue);
 
+        syncButton = (findViewById(R.id.button_sync));
+        syncButton.setOnClickListener(v -> sync());
+
 
     }
 
+
+    public void sync(){
+        file(Mconnection);
+
+    }
     public void connectAndSetupNotifications(String mac) {
 
         RxBleDevice bleDevice = rxBleClient.getBleDevice(mac);
@@ -79,25 +98,25 @@ public class DeviceActivity extends AppCompatActivity {
     }
 
     private void onConnectionReceived(RxBleConnection connection) {
+        Mconnection =connection;
         setupNotificationOnDevice(connection, ServiceUUID);
-
-
 
 
     }
 
-    private void file(RxBleConnection connection){
+    private void file(RxBleConnection connection) {
         connection.writeCharacteristic(ServiceUUID, requestFileList)
                 .subscribe(bytes -> {
                     // handle the response
-                    String hexString = bytesToHex(bytes);
+                    //String hexString = bytesToHex(bytes);
 
-                    Log.v(TAG, "Answer" + hexString);
+                   // Log.v(TAG, "Answer" + hexString);
                 }, throwable -> {
                     // handle the error
                 });
     }
-    private void speicher(RxBleConnection connection){
+
+    private void speicher(RxBleConnection connection) {
         byte[] value = new byte[]{(byte) 0x090009};
 
         connection.writeCharacteristic(ServiceUUID, value)
@@ -110,21 +129,59 @@ public class DeviceActivity extends AppCompatActivity {
                     // handle the error
                 });
     }
-    private void copy(RxBleConnection connection) {
-        byte[] value = new byte[]{(byte) 0x43};
-        connection.writeCharacteristic(UART_RX, value)
-                .subscribe(bytes -> {
-                    // handle the response
-                    String hexString = bytesToHex(bytes);
 
-                    Log.v(TAG, "Answer" + hexString);
-                }, throwable -> {
-                    // handle the error
-                });
+    private Completable copy(RxBleConnection connection) {
+        byte[] value = new byte[]{(byte) 0x43};
+        return Completable.fromAction(() -> {
+            Thread.sleep(1000);
+            Log.v(TAG,"Copy");
+            connection.writeCharacteristic(UART_RX, value).blockingGet();
+        });
     }
 
-    private void ack(RxBleConnection connection) {
-        byte[] value = new byte[]{(byte) 0x06};
+    private Completable processNot(RxBleConnection connection,byte[] bytes ) {
+        byte[] value = new byte[]{(byte) 0x43};
+        return Completable.fromAction(() -> {
+            //Thread.sleep(500);
+            //Log.v(TAG, "Bytes:" + Arrays.toString(bytes));
+            String hexString = bytesToHex(bytes);
+            String ascii = hexToAscii(hexString);
+            if (ascii.contains("/")) {
+                //  EOT(connection);
+            }
+            if (ascii.contains("04")) {
+                // file(connection);
+            }
+            if (ascii.contains("filelist.txtT")) {
+                //Log.v(TAG, "true");
+                copy(connection).subscribeOn(Schedulers.io()).subscribe();
+                //Thread.sleep(500);
+                //file(connection);
+                //Thread.sleep(500);
+                //copy(connection).subscribeOn(Schedulers.io()).subscribe();
+
+                //copy(connection);
+                //copy(connection);
+            }
+            if (ascii.contains("filelist.txt 365")) {
+                //  writeToFile(bytes);
+                //   ack(connection);
+                ack(connection);
+                copy(connection);
+                //speicher(connection);
+
+
+            }
+
+
+            Log.v(TAG, "Notification:" + ascii);
+            // handle the value change here
+        });
+    }
+
+    private void ack(RxBleConnection connection) throws InterruptedException {
+        byte[] value = new byte[]{(byte) 06};
+        //Thread.sleep(1000);
         connection.writeCharacteristic(UART_RX, value).subscribe(bytes -> {
             // handle the response
             String hexString = bytesToHex(bytes);
@@ -167,38 +224,15 @@ public class DeviceActivity extends AppCompatActivity {
     private void setupNotificationOnDevice(RxBleConnection connection, UUID characteristicUUID) {
 
 
-        connection.setupNotification(characteristicUUID)
+        connection.setupNotification(characteristicUUID,QUICK_SETUP)
                 .doOnNext(notificationObservable -> {
                     // The setup has been successful, now observe value changes.
                     notificationObservable
                             .subscribe(bytes -> {
 
-                                Log.v(TAG, "Bytes:" + Arrays.toString(bytes));
-                                String hexString = bytesToHex(bytes);
-                                String ascii = hexToAscii(hexString);
-                                if(ascii.contains("/")){
-                                  //  EOT(connection);
-                                }
-                                if(ascii.contains("04")){
-                                   // file(connection);
-                                }
-                                if(ascii.contains("filelist.txtT")){
-                                  //  copy(connection);
-                                }
-                                if (ascii.contains("filelist.txt 365")) {
-                                    //  writeToFile(bytes);
-                                 //   ack(connection);
-                                    ack(connection);
-                                    copy(connection);
-                                    //speicher(connection);
+                                processNot(connection, bytes ).subscribeOn(Schedulers.io()).subscribe();
+                                Log.v(TAG,"Notify");
 
-
-
-                                }
-
-
-                                Log.v(TAG, "Notification:" + ascii);
-                                // handle the value change here
                             }, throwable -> {
                                 Log.e(TAG, "Error setting up notification", throwable);
                             });
@@ -215,13 +249,53 @@ public class DeviceActivity extends AppCompatActivity {
 
                     Log.d(TAG, "Notification set up successfully");
 
-speicher(connection);
-                    EOT(connection);
-                    file(connection);
-                    copy(connection);
-                    //ack(connection);
-                    copy(connection);
-                    speicher(connection);
+                    speicher(connection); //works
+                    EOT(connection);// works
+
+                    //copy(connection);
+                   // ack(connection);
+                    //copy(connection);
+                    //speicher(connection);
+
+                }, throwable -> {
+                    Log.e(TAG, "Error setting up notification", throwable);
+                });
+    }
+
+    private void setupNotificationOnDevice2(RxBleConnection connection, UUID characteristicUUID) {
+
+        connection.setupNotification(characteristic)
+                .doOnNext(notificationObservable -> {
+                    // The setup has been successful, now observe value changes.
+                    notificationObservable
+                            .subscribe(bytes -> {
+
+                                processNot(connection, bytes ).subscribeOn(Schedulers.io()).subscribe();
+                                Log.v(TAG,"Notify");
+
+                            }, throwable -> {
+                                Log.e(TAG, "Error setting up notification", throwable);
+                            });
+                })
+                .flatMapSingle(notificationObservable -> connection.writeCharacteristic(characteristicUUID, ENABLE_NOTIFICATION_VALUE))
+                .subscribe(bytes -> {
+                    /*
+                    UUID receivedUUID = characteristicUUID;
+                     if(receivedUUID.equals(ServiceUUID)) {
+                         UUID characteristicsUUID = UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb");
+                         setupNotificationOnDevice(connection,characteristicsUUID);
+                         }
+                     */
+
+                    Log.d(TAG, "Notification set up successfully");
+
+                    speicher(connection); //works
+                    EOT(connection);// works
+
+                    //copy(connection);
+                    // ack(connection);
+                    //copy(connection);
+                    //speicher(connection);
 
                 }, throwable -> {
                     Log.e(TAG, "Error setting up notification", throwable);
