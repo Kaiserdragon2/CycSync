@@ -1,36 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/main"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/addButton"
+    <Button
+        android:id="@+id/scan_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="20dp"
-        android:clickable="true"
-        android:contentDescription="@string/addNewDevice"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:maxImageSize="32dp"
-        app:srcCompat="@drawable/add_button" />
+        android:text="Scan for Devices"
+        android:layout_centerInParent="true"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/foundDevices"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_margin="10dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+    <Button
+        android:id="@+id/disconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/scan_button"
+        android:layout_alignStart="@+id/scan_button"
+        android:layout_alignEnd="@+id/scan_button"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="143dp"
+        android:layout_marginEnd="25dp"
+        android:text="Disconnect" />
 
-    </androidx.recyclerview.widget.RecyclerView>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
-
+    <Button
+        android:id="@+id/read"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/scan_button"
+        android:layout_alignStart="@+id/scan_button"
+        android:layout_alignEnd="@+id/scan_button"
+        android:layout_marginStart="47dp"
+        android:layout_marginEnd="44dp"
+        android:layout_marginBottom="238dp"
+        android:text="Read" />
+</RelativeLayout>

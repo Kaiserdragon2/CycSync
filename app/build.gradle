@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'de.kaiserdragon2.cycsync'
-    compileSdk 32
+    compileSdk 34
 
     defaultConfig {
         applicationId 'de.kaiserdragon2.cycsync'
         minSdk 28
-        targetSdk 32
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -30,8 +30,8 @@ android {
 
 dependencies {
 
-    implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'com.google.android.material:material:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation "com.polidea.rxandroidble3:rxandroidble:1.17.2"
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.2'
     testImplementation 'junit:junit:4.13.2'
